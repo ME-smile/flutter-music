@@ -81,6 +81,20 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  fluttery_audio:
+    dependency: "direct main"
+    description:
+      name: fluttery_audio
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "0.0.4"
+  logging:
+    dependency: transitive
+    description:
+      name: logging
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "0.11.3+2"
   lpinyin:
     dependency: "direct main"
     description:
@@ -116,6 +130,13 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "1.5.0"
+  provider:
+    dependency: "direct main"
+    description:
+      name: provider
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "2.0.1"
   quiver:
     dependency: transitive
     description:
@@ -193,4 +214,4 @@ packages:
     version: "2.0.8"
 sdks:
   dart: ">=2.2.0 <3.0.0"
-  flutter: ">=0.1.4 <3.0.0"
+  flutter: ">=0.1.4 <2.0.0"

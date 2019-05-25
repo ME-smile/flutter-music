@@ -4,19 +4,14 @@ class SingerModel{
   final int id;
   final String avatar;
   String title='';
-  SingerModel(
+  SingerModel({
     this.name,
     this.id,
     this.avatar,
-  );
+  });
   static RegExp reg = RegExp('[a-zA-Z]');
   static normalizeSinger(List list){
-    // for(int i=0;i<list.length;i++){
-    //   var item = list[i];
-    //   print(item['name']);
-    //   print(reg.hasMatch(list[i]['name']));
-    // }
-    const String HOT_NAME='热门';
+    const String HOT_NAME='🔥';
     const int HOT_SINGER_LEN=10;
     final int len = list.length;
     Map<String,dynamic> data={
@@ -28,7 +23,7 @@ class SingerModel{
     //  遍历list,取出前十条，添加到items,
     for(int i=0;i<len;i++){
       var item = list[i];
-      SingerModel singerModel=SingerModel(item['name'],item['id'],item['picUrl']);
+      SingerModel singerModel=SingerModel(name:item['name'],id:item['id'],avatar:item['picUrl']);
       if(i<HOT_SINGER_LEN){
         data['hot']['items'].add(
           singerModel
@@ -65,5 +60,24 @@ class SingerModel{
       return a['title'].codeUnitAt(0)-b['title'].codeUnitAt(0);
     });
        return hot+ret;
+  }
+}
+class SingerDetailModel{
+  final int id;
+  final String name;
+  final String avatar;
+  // final List<SongModel> songs;
+  const SingerDetailModel({
+    this.id,
+    this.name,
+    this.avatar
+  });
+
+  factory SingerDetailModel.fromJson(Map<String,dynamic> json){
+    return SingerDetailModel(
+      id:json['id'],
+      name:json['name'],
+      avatar: json['picUrl']
+    );
   }
 }
