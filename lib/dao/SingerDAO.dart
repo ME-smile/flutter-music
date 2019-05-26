@@ -2,10 +2,10 @@ import 'package:dio/dio.dart';
 import 'dart:async';
 import 'url.dart';
 
-Dio dio = new Dio();
+
 Future getSingerData(String path) async {
   try {
-    Response response = await dio.get(routers[path]);
+    Response response = await Dio().get(routers[path]);
     if (response.statusCode == 200) {
       return response.data;
     } else {
@@ -18,7 +18,7 @@ Future getSingerData(String path) async {
 
 Future getSingerAndSongData(String path, int id) async {
   try {
-    Response response = await dio.get(routers[path] + '$id');
+    Response response = await Dio().get(routers[path] + '$id');
     if (response.statusCode == 200) {
       return response.data;
     } else {
@@ -30,5 +30,6 @@ Future getSingerAndSongData(String path, int id) async {
 }
 
 getAudioUrl(songList, index) async {
+  print('===================================++++++++++++++++++++++=');
   return getSingerAndSongData('audioUrl', songList[index].id);
 }

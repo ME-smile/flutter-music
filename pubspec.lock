@@ -49,7 +49,7 @@ packages:
       name: dio
       url: "https://pub.flutter-io.cn"
     source: hosted
-    version: "2.1.3"
+    version: "2.1.5"
   flutter:
     dependency: "direct main"
     description: flutter
@@ -130,13 +130,13 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "1.5.0"
-  provider:
+  provide:
     dependency: "direct main"
     description:
-      name: provider
+      name: provide
       url: "https://pub.flutter-io.cn"
     source: hosted
-    version: "2.0.1"
+    version: "1.0.2"
   quiver:
     dependency: transitive
     description:

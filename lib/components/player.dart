@@ -1,8 +1,8 @@
 import 'dart:math';
 import 'dart:ui';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:music/components/loading.dart';
 import 'package:music/dao/SingerDAO.dart';
 
 import 'package:music/model/song.dart';
@@ -20,17 +20,18 @@ class Player extends StatefulWidget {
 }
 
 class _PlayerState extends State<Player> with TickerProviderStateMixin {
-  SongModel currentSong;
-  int currentIndex;
+  String _audioUrl;
   @override
   void initState() {
     setState(() {
-      currentIndex = widget.index;
+      getAudioUrl(widget.songList, widget.index).then((val) {
+        setState(() {
+          _audioUrl = val['data'][0]['url'];
+        });
+      });
     });
-
     super.initState();
   }
-
   @override
   void dispose() {
     super.dispose();
@@ -38,46 +39,42 @@ class _PlayerState extends State<Player> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return Provide<AudioModel>(
-        builder: (BuildContext context, Widget child, AudioModel audioModel) {
-      currentSong = audioModel.playList[audioModel.currentIndex];
-      return FutureBuilder(
-          future: getAudioUrl(audioModel.playList, audioModel.currentIndex),
-          builder: (context, snapshot) {
-            if (snapshot.hasData) {
-              currentSong.audioUrl = snapshot.data['data'][0]['url'];
-              return Audio(
-                audioUrl: currentSong.audioUrl,
-                playbackState: PlaybackState.playing,
-                child: Scaffold(
-                    body: Stack(
-                  children: <Widget>[
-                    _BlurBackground(
-                      songModel: currentSong,
-                    ),
-                    Column(
-                      children: <Widget>[
-                        _PlayerHeader(songModel: currentSong),
-                        // SizedBox(height:200.0),
-                        _RotationCoverImage(
-                          rotating: true,
-                          songModel: currentSong,
-                        ),
-                        _OperationBar(),
-                        // _ProgressBar(),
-                        _ControllerBar(),
-                        Text(currentSong.title),
-                        SizedBox(height: 40.0)
-                      ],
-                    )
-                  ],
-                )),
-              );
-            } else {
-              return Loading(isFull: true, isLoading: true);
-            }
-          });
-    });
+    
+    AudioModel audioModel = Provide.value<AudioModel>(context);
+    SongModel currentSong = audioModel.currentSong;
+    currentSong.audioUrl = _audioUrl;
+    return Offstage(
+      offstage: !audioModel.fullScreen,
+      child: Audio(
+      audioUrl: currentSong.audioUrl,
+      playbackState:
+          audioModel.playing ? PlaybackState.playing : PlaybackState.paused,
+      child: Scaffold(
+          body: Stack(
+        children: <Widget>[
+          _BlurBackground(
+            songModel: currentSong,
+          ),
+          Column(
+            children: <Widget>[
+              _PlayerHeader(),
+              // SizedBox(height:200.0),
+              _RotationCoverImage(
+                rotating: true,
+                songModel: currentSong,
+              ),
+              _OperationBar(),
+              _ProgressBar(),
+              _ControllerBar(),
+               Text(currentSong.title),
+              SizedBox(height: 40.0),
+              MiniPlayer(),
+            ],
+          )
+        ],
+      )),
+    ),
+    );
   }
 }
 
@@ -114,10 +111,12 @@ class _BlurBackground extends StatelessWidget {
 }
 
 class _PlayerHeader extends StatelessWidget {
-  const _PlayerHeader({this.songModel, Key key}) : super(key: key);
-  final SongModel songModel;
+  const _PlayerHeader({Key key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
+    AudioModel audioModel = Provide.value<AudioModel>(context);
+    SongModel songModel = audioModel.currentSong;
     return AppBar(
       elevation: 0.0,
       leading: IconButton(icon: Icon(Icons.arrow_back), onPressed: () {}),
@@ -154,7 +153,7 @@ class _RotationCoverImage extends StatefulWidget {
 class _RotationCoverImageState extends State<_RotationCoverImage>
     with SingleTickerProviderStateMixin {
   //album cover rotation
-  double rotation = 0.0;
+  double rotation = 0;
 
   //album cover rotation animation
   AnimationController controller;
@@ -210,33 +209,27 @@ class _RotationCoverImageState extends State<_RotationCoverImage>
     }
     return Transform.rotate(
       angle: rotation,
-      child: Container(
-          margin: EdgeInsets.only(top: 80.0),
-          width: 250,
-          height: 250,
-          child: Material(
-            elevation: 2.0,
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(125),
-            clipBehavior: Clip.antiAlias,
-            child: AspectRatio(
-              aspectRatio: 1,
-              child: Container(
-                // foregroundDecoration: BoxDecoration( //设置这个属性的意义何在？？？
-                //     image: DecorationImage(
-                //         image: AssetImage('lib/assets/imgs/default.jpg'))),
-                width: 250.0,
-                height: 250.0,
-                padding: EdgeInsets.all(30),
-                child: ClipOval(
-                  child: Image(
-                    image: image,
-                    fit: BoxFit.cover,
-                  ),
-                ),
+      child: Material(
+        elevation: 3,
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(500),
+        clipBehavior: Clip.antiAlias,
+        child: AspectRatio(
+          aspectRatio: 1,
+          child: Container(
+            // foregroundDecoration: BoxDecoration( //设置这个属性的意义何在？？？
+            //     image: DecorationImage(
+            //         image: AssetImage('lib/assets/imgs/default.jpg'))),
+            padding: EdgeInsets.all(30),
+            child: ClipOval(
+              child: Image(
+                image: image,
+                fit: BoxFit.cover,
               ),
             ),
-          )),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -252,73 +245,23 @@ class _OperationBar extends StatelessWidget {
   }
 }
 
-// class _ProgressBar extends StatefulWidget {
-//   _ProgressBar({Key key}) : super(key: key);
+class _ProgressBar extends StatefulWidget {
+  _ProgressBar({Key key}) : super(key: key);
 
-//   _ProgressBarState createState() => _ProgressBarState();
-// }
+  _ProgressBarState createState() => _ProgressBarState();
+}
 
-// class _ProgressBarState extends State<_ProgressBar> {
-//   bool isUserTracking = false;
-//   double trackPos = 0.0; //播放到的位置
-
-//   String getTimeStamp(int milliseconds) {
-//   int seconds = (milliseconds / 1000).truncate();
-//   int minutes = (seconds / 60).truncate();
-
-//   String minutesStr = (minutes % 60).toString().padLeft(2, '0');
-//   String secondsStr = (seconds % 60).toString().padLeft(2, '0');
-
-//   return "$minutesStr:$secondsStr";
-// }
-
-//   @override
-//   Widget build(BuildContext context) {
-//       bool isUserTracking = false;
-
-//   double trackingPosition = 0;
-//     return AudioComponent(
-//       playerBuilder: (BuildContext context,AudioPlayer player, Widget child){
-//         double playBackProgress = 0.0;
-//         String durationText;
-//         String positionText;
-//         Widget progressIndicator;
-//          var duration = player.audioLength.inMilliseconds;
-//          var position = player.position.inMilliseconds;
-//         if(player.audioLength != null && player.position != null){
-//           durationText = getTimeStamp(duration);
-//           positionText = getTimeStamp(position);
-//           playBackProgress = position/duration;
-//         }
-//              progressIndicator = Stack(
-//         fit: StackFit.passthrough,
-//         children: <Widget>[
-//           Slider(
-//             value: player.position.inMilliseconds.toDouble().clamp(0.0, duration.toDouble()),
-//             min: 0.0,
-//             max: duration.toDouble(),
-//             onChangeStart: (value) {
-//               setState(() {
-//                 isUserTracking = true;
-//                 trackingPosition = value;
-//               });
-//             },
-//             onChanged: (value) {
-//               setState(() {
-//                 trackingPosition = value;
-//               });
-//             },
-//           ),
-//         ],
-//       );
-//     } else {
-//       //a disable slider if media is not available
-//       progressIndicator = Slider(value: 0, onChanged: (_) => {});
-//     }
-//       },
-//     );
-//   }
-// }
+class _ProgressBarState extends State<_ProgressBar> {
+  bool isUserTracking = false;
+  double trackPos = 0.0; //播放到的位置
+  @override
+  Widget build(BuildContext context) {
+    return Slider(
+      value: 1.0,
+      onChanged: null,
+    );
+  }
+}
 
 class _ControllerBar extends StatelessWidget {
   const _ControllerBar({Key key}) : super(key: key);
@@ -350,22 +293,25 @@ class _ControllerBar extends StatelessWidget {
 class _PlayPauseButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return new AudioComponent(
+    return AudioComponent(
       updateMe: [
         WatchableAudioProperties.audioPlayerState,
       ],
       playerBuilder: (BuildContext context, AudioPlayer player, Widget child) {
         IconData icon = Icons.music_note;
         Color buttonColor = const Color(0xFFFFAFAF);
+        AudioModel audionModel=Provide.value<AudioModel>(context);
         Function onPressed;
         if (player.state == AudioPlayerState.playing) {
           icon = Icons.pause;
           onPressed = player.pause;
+          audionModel.setPlaying(false);
           buttonColor = Colors.white;
         } else if (player.state == AudioPlayerState.paused ||
             player.state == AudioPlayerState.completed) {
           icon = Icons.play_arrow;
           onPressed = player.play;
+          audionModel.setPlaying(true);
           buttonColor = Colors.white;
         }
 
@@ -377,9 +323,9 @@ class _PlayPauseButton extends StatelessWidget {
           elevation: 10.0,
           highlightElevation: 5.0,
           onPressed: onPressed,
-          child: new Padding(
+          child: Padding(
             padding: const EdgeInsets.all(8.0),
-            child: new Icon(
+            child: Icon(
               icon,
               color: AppColorStyle.darkAccentColor,
               size: 35.0,
@@ -394,21 +340,28 @@ class _PlayPauseButton extends StatelessWidget {
 class _PreviousButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return new AudioPlaylistComponent(
+    return AudioPlaylistComponent(
       playlistBuilder: (BuildContext context, Playlist playlist, Widget child) {
-        return new IconButton(
+        return IconButton(
             splashColor: AppColorStyle.lightAccentColor,
             highlightColor: Colors.transparent,
-            icon: new Icon(
+            icon: Icon(
               Icons.skip_previous,
               color: Colors.white,
               size: 35.0,
             ),
             onPressed: () {
+              print('我被点击了,切换到上一曲');
               AudioModel audioModel = Provide.value<AudioModel>(context);
               int index = audioModel.currentIndex;
               if (index > 0) {
                 audioModel.setCurrentIndex(index - 1);
+                print('尝试发送请求');
+                getAudioUrl(audioModel.playList, index - 1).then((val) {
+                  audioModel.currentSong.audioUrl = val['data'][0]['url'];
+                  print('${audioModel.currentIndex}');
+                  print('当前歌曲${audioModel.currentSong.title}');
+                });
               }
             });
       },
@@ -419,21 +372,23 @@ class _PreviousButton extends StatelessWidget {
 class _NextButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return new AudioPlaylistComponent(
+    return AudioPlaylistComponent(
       playlistBuilder: (BuildContext context, Playlist playlist, Widget child) {
-        return new IconButton(
+        return IconButton(
             splashColor: AppColorStyle.lightAccentColor,
             highlightColor: Colors.transparent,
-            icon: new Icon(
+            icon: Icon(
               Icons.skip_next,
               color: Colors.white,
               size: 35.0,
             ),
             onPressed: () {
-              AudioModel audioModel = Provide.value<AudioModel>(context);
-              int index = audioModel.currentIndex;
-              if (index < audioModel.playList.length - 2) {
-                audioModel.setCurrentIndex(index + 1);
+              AudioModel _songStore = Provide.value<AudioModel>(context);
+              int _currentIndex = _songStore.currentIndex;
+              if (_currentIndex < _songStore.playList.length) {
+                getAudioUrl(_songStore.playList, _currentIndex + 1).then((val) {
+                  _songStore.currentSong.audioUrl = val['data'][0]['url'];
+                });
               }
             });
       },
@@ -441,30 +396,37 @@ class _NextButton extends StatelessWidget {
   }
 }
 
-// class _NextButton extends StatelessWidget {
-//   @override
-//   Widget build(BuildContext context) {
-//     return Text('=================');
-//     return new AudioPlaylistComponent(
-//       playlistBuilder: (BuildContext context, Playlist playlist, Widget child) {
-//         return IconButton(
-//             splashColor: AppColorStyle.lightAccentColor,
-//             highlightColor: Colors.transparent,
-//             icon: new Icon(
-//               Icons.skip_next,
-//               color: Colors.white,
-//               size: 35.0,
-//             ),
-//             onPressed: () {
-//               AudioModel _songStore = Provide.value<AudioModel>(context);
-//               int _currentIndex = _songStore.currentIndex;
-//               if (_currentIndex < _songStore.playList.length) {
-//                 getAudioUrl(_songStore.playList, _currentIndex + 1).then((val) {
-//                   _songStore.currentSong.audioUrl = val['data'][0]['url'];
-//                 });
-//               }
-//             });
-//       },
-//     );
-//   }
-// }
+class MiniPlayer extends StatelessWidget {
+  const MiniPlayer({Key key}) : super(key: key);
+  @override
+  Widget build(BuildContext context) {
+  AudioModel audioModel = Provide.value<AudioModel>(context);
+  SongModel currentSong = audioModel.currentSong;
+    return Offstage(
+      offstage: audioModel.fullScreen,
+      child: SizedBox(
+        width: double.infinity,
+        height: 60.0,
+        child: Row(
+          children: <Widget>[
+            CircleAvatar(
+              backgroundImage: NetworkImage(currentSong.imgUrl),
+            ),
+            RichText(
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text: '${currentSong.title}\n'
+                  ),
+                  TextSpan(
+                    text: '${currentSong.subTitle}'
+                  )
+                ]
+              )
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
